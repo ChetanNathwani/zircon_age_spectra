@@ -111,12 +111,17 @@ def calc_flatness(ages, uncertainty = None, gradient_cut_off = 0.3, young_index 
     return flatness
 
 def filter_older_ages(age_dist, unc=None, weighted = False, gradient_cut_off = 0.3, young_index = 2, tflatmax = 0.25):
-    if weighted == 'False':
+    if not weighted or unc is None:
+        print('x')
         while calc_flatness(age_dist, gradient_cut_off = gradient_cut_off, young_index = young_index) >= tflatmax:
             age_dist = age_dist[:-1]
-            unc = unc[:-1]
+            if unc is None:
+                unc = unc
+            else:
+                unc = unc[:-1]
     else:
-        while calc_flatness(age_dist, unc, gradient_cut_off = gradient_cut_off, young_index = young_index) >= tflatmax:
+        print('weighted')
+        while calc_flatness(age_dist, uncertainty = unc, gradient_cut_off = gradient_cut_off, young_index = young_index) >= tflatmax:
             age_dist = age_dist[:-1]
             unc = unc[:-1]
     
