@@ -112,7 +112,6 @@ def calc_flatness(ages, uncertainty = None, gradient_cut_off = 0.3, young_index 
 
 def filter_older_ages(age_dist, unc=None, weighted = False, gradient_cut_off = 0.3, young_index = 2, tflatmax = 0.25):
     if not weighted or unc is None:
-        print('x')
         while calc_flatness(age_dist, gradient_cut_off = gradient_cut_off, young_index = young_index) >= tflatmax:
             age_dist = age_dist[:-1]
             if unc is None:
@@ -120,7 +119,6 @@ def filter_older_ages(age_dist, unc=None, weighted = False, gradient_cut_off = 0
             else:
                 unc = unc[:-1]
     else:
-        print('weighted')
         while calc_flatness(age_dist, uncertainty = unc, gradient_cut_off = gradient_cut_off, young_index = young_index) >= tflatmax:
             age_dist = age_dist[:-1]
             unc = unc[:-1]
