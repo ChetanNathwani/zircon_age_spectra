@@ -127,7 +127,7 @@ def filter_older_ages(age_dist, unc=None, weighted = False, gradient_cut_off = 0
 
 # Import data for TIMS age vs unc parameterisation
 
-sava = pd.read_csv('/Users/cnathwani/Desktop/Python_Projects/zircon_age_spectra/data/zircon_tims_comp.csv',encoding = "ISO-8859-1")
+sava = pd.read_csv('../data/zircon_tims_comp.csv',encoding = "ISO-8859-1")
 sava = sava[sava['age68'] < 1000]
 
 # Define function to fit to data
@@ -158,7 +158,7 @@ def laser_func_unc(params, sigma):
 
 def generate_pca_scores():
 
-    data = pd.read_csv('/Users/cnathwani/Desktop/Python_Projects/zircon_age_spectra/data/zircon_tims_comp_filtered.csv')
+    data = pd.read_csv('../data/zircon_tims_comp_filtered.csv',encoding = "ISO-8859-1")
     localities = [data.groupby('Locality').get_group(x) for x in data.groupby('Locality').groups]
 
     all_samples = []
@@ -214,7 +214,7 @@ def generate_pca_scores():
 
 def calc_W_PCA(ages, unc):
     check_data(ages, unc)
-    data = pd.read_csv('/Users/cnathwani/Desktop/Python_Projects/zircon_age_spectra/data/zircon_tims_comp_filtered.csv')
+    data = pd.read_csv('../data/zircon_tims_comp_filtered.csv',encoding = "ISO-8859-1")
     localities = [data.groupby('Locality').get_group(x) for x in data.groupby('Locality').groups]
 
     all_samples = []
@@ -276,10 +276,9 @@ def calc_W_PCA(ages, unc):
     return(pc_user)
 
 
-laser = pd.read_csv('/Users/cnathwani/Desktop/Python_Projects/zircon_age_spectra/data/laicpms_comp.csv')
+laser = pd.read_csv('../data/laicpms_comp.csv')
 # Let's fit an exponential function.  
 # This looks like a line on a lof-log plot.
 def laser_func(x, a, b):
     return a * np.power(x, b)
 laser_popt, laser_pcov = curve_fit(laser_func, laser['68age'], laser['68 2s'])
-        
