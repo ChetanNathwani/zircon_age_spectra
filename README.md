@@ -30,7 +30,7 @@ Then calling the function:
 ```sh
 geochron.filter_older_ages(ages)
 ```
-Here are some examples for three age distributions:
+Here are some examples for three age distributions where the red are non-filtered ages and grey are filtered ages:
 
 ![alt text](https://github.com/ChetanNathwani/zircon_age_spectra/blob/main/readme_figures/readme_filtering.png)
 
