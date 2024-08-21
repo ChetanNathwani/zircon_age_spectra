@@ -15,6 +15,10 @@ git clone https://github.com/ChetanNathwani/zircon_age_spectra.git
 ```
 4. You should now see the repository has appeared in your current working directory
 
+### Functions
+
+![alt text](https://github.com/ChetanNathwani/zircon_age_spectra/blob/main/readme_figures/readme_filtering.png)
+
 ### Online usage
 For trying out some of the code without installation, there is an interactive notebook: LINK HERE
 
