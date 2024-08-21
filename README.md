@@ -17,6 +17,21 @@ git clone https://github.com/ChetanNathwani/zircon_age_spectra.git
 
 ### Functions
 
+## Systematically ilter ``antecrysts" (older tails) in age distributions
+
+This can be done by defining an age distribution:
+```sh
+ages = [0.151, 0.284, 0.293, 0.195, 0.237, 0.21 , 0.367, 0.546, 0.941,
+       0.194, 0.422, 0.219, 0.29 , 0.242, 0.319, 0.269, 0.267, 0.138,
+       0.217, 0.327, 0.206, 0.263, 0.359, 0.303, 0.449, 0.138, 0.365,
+       0.261, 0.142]
+```
+Then calling the function:
+```sh
+geochron.filter_older_ages(ages)
+```
+Here are some examples for three age distributions:
+
 ![alt text](https://github.com/ChetanNathwani/zircon_age_spectra/blob/main/readme_figures/readme_filtering.png)
 
 ### Online usage
