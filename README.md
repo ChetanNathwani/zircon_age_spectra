@@ -92,6 +92,8 @@ An example of the results:
 
 ![alt text](https://github.com/ChetanNathwani/zircon_age_spectra/blob/main/readme_figures/readme_PCA_W2_plot.png)
 
+We can see that the youngest Toba Tuff has a younger skew and plots where most volcanic age distributions plot
+
 ## Online usage
 For trying out some of the code without installation, there is an interactive notebook: LINK HERE
 
