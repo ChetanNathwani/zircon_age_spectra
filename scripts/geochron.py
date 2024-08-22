@@ -210,7 +210,7 @@ def generate_pca_scores():
 
     pca_types = [PC_scores.groupby('Type').get_group(x) for x in PC_scores.groupby('Type').groups]
     
-    return PC_scores['PC1'], PC_scores['PC2'], PC_scores['Type']
+    return PC_scores['PC1'], PC_scores['PC2'], PC_scores['Type'], PC_scores['Locality'] 
 
 def calc_W_PCA(ages, unc):
     check_data(ages, unc)
