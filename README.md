@@ -1,4 +1,6 @@
-Repository for filtering and comparing zircon age spectra for ID-TIMS datasets
+Repository for filtering and comparing zircon age spectra for ID-TIMS datasets 
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ChetanNathwani/zircon_age_spectra/HEAD?labpath=scripts%2Fzircon_age_spectra_binder.ipynb)
 
 ## Prerequisites
 
