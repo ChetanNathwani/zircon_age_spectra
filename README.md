@@ -1,5 +1,7 @@
 Repository for filtering and comparing zircon age spectra for ID-TIMS datasets 
 
+[![DOI](https://zenodo.org/badge/842547834.svg)](https://zenodo.org/doi/10.5281/zenodo.13378411) [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ChetanNathwani/zircon_age_spectra/HEAD?labpath=scripts%2Fzircon_age_spectra_binder.ipynb)
+
 ## Online usage
 
 For trying out some of the code without installation, click the link below to run a Jupyter notebook to run some of the functions. Be patient, it can take a good few minutes for everything to compile.
@@ -102,3 +104,5 @@ We can see that the youngest Toba Tuff has a younger skew and plots where most v
 
 
 ## Citation
+
+[![DOI](https://zenodo.org/badge/842547834.svg)](https://zenodo.org/doi/10.5281/zenodo.13378411)
