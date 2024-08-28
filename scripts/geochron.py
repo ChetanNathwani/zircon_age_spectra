@@ -22,9 +22,12 @@ def check_data(ages, unc):
     delta_T = np.max(ages) - np.min(ages)
     avg_sigma = np.mean(unc)
     if delta_T/avg_sigma < 10:
-        warnings.warn("Distributions with low ΔT/σ may not provide useful results")
+        warnings.warn("Distributions with low Δt/σ may not provide useful results")
     if np.mean(ages) > 120:
-        warnings.warn("Age distributions greater than 120 Ma may not provide useful results, check for Pb loss")
+        warnings.warn("Old age distributions may not provide useful results, check for Pb loss")
+    stdev_weights = np.std(((1/(unc/2)**2)/np.sum(1/(unc/2)**2)))
+    if stdev_weights > 0.10:
+        warnings.warn("Relative uncertainties show large variation, shape of age distribution may be dominated by variation in analytical uncertainty")
 
 def plot_kde(ages, uncertainty=None, normalize = False):
     if normalize is True:
