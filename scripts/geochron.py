@@ -7,6 +7,9 @@ from sklearn.decomposition import PCA
 import warnings
 
 def normalize_age(group):
+    """
+    
+    """
     min_age = group.min()
     max_age = group.max()
     return (group - min_age) / (max_age - min_age)
@@ -130,33 +133,44 @@ def filter_older_ages(age_dist, unc=None, weighted = False, gradient_cut_off = 0
 
 # Import data for TIMS age vs unc parameterisation
 
-sava = pd.read_csv('../data/zircon_tims_comp.csv',encoding = "ISO-8859-1")
-sava = sava[sava['age68'] < 1000]
-
-# Define function to fit to data
 def TIMS_func(x, a, b, c):
     output_2s = a * np.power(x, b) + c
     return output_2s
 
-TIMS_popt, TIMS_pcov = curve_fit(TIMS_func, sava['age68'], sava['2s_68']) # Fit regression
-def tims_func_unc(params, sigma):
-    # Calculate the sigma error on fit parameters by taking the diagonal of the covariance matrix
-    pcov_sigma = np.sqrt(np.diag(sigma))
+tims_compilation = pd.read_csv('../data/zircon_tims_comp.csv',encoding = "ISO-8859-1")
+tims_compilation = tims_compilation[tims_compilation['age68'] < 1000]
+TIMS_popt, TIMS_pcov = curve_fit(TIMS_func, tims_compilation['age68'], tims_compilation['2s_68']) # Fit regression
+# Define function to fit to data
+def TIMS_uncer(age):
+
+    pcov_sigma = np.sqrt(np.diag(TIMS_pcov))
 
     # Update parameters with gaussian uncertainty
-    TIMS_popt_prop = [np.random.normal(params[0], pcov_sigma[0], 1),
-                  np.random.normal(params[1], pcov_sigma[1], 1),
-                  np.random.normal(params[2], pcov_sigma[2], 1)]
-    return TIMS_popt_prop
-
-def laser_func_unc(params, sigma):
-    # Calculate the sigma error on fit parameters by taking the diagonal of the covariance matrix
-    pcov_sigma = np.sqrt(np.diag(sigma))
+    TIMS_popt_prop = [np.random.normal(TIMS_popt[0], pcov_sigma[0], 1),
+                      np.random.normal(TIMS_popt[1], pcov_sigma[1], 1),
+                      np.random.normal(TIMS_popt[2], pcov_sigma[2], 1)]
     
+    output_2s = TIMS_popt_prop[0] * np.power(age, TIMS_popt_prop[1]) + TIMS_popt_prop[2]
+    
+    return float(output_2s)
+
+def laser_func(x, a, b):
+    return a * np.power(x, b)
+
+laser_compilation = pd.read_csv('../data/laicpms_comp.csv')
+laser_popt, laser_pcov = curve_fit(laser_func, laser_compilation['68age'], laser_compilation['68 2s'])
+
+def laser_uncer(age):
+    
+    pcov_sigma = np.sqrt(np.diag(laser_pcov))
+
     # Update parameters with gaussian uncertainty
-    laser_popt_prop = [np.random.normal(params[0], pcov_sigma[0], 1),
-                       np.random.normal(params[1], pcov_sigma[1], 1)]
-    return laser_popt_prop
+    laser_popt_prop = [np.random.normal(laser_popt[0], pcov_sigma[0], 1),
+                      np.random.normal(laser_popt[1], pcov_sigma[1], 1)]
+
+    output_2s = laser_popt_prop[0] * np.power(age, laser_popt_prop[1])
+
+    return(output_2s)
 
 
 def generate_pca_scores():
@@ -215,60 +229,59 @@ def generate_pca_scores():
     
     return PC_scores
 
-def calc_W_PCA(ages, unc):
-    check_data(ages, unc)
-    data = pd.read_csv('../data/zircon_tims_comp_filtered.csv',encoding = "ISO-8859-1")
-    localities = [data.groupby('Locality').get_group(x) for x in data.groupby('Locality').groups]
+data = pd.read_csv('../data/zircon_tims_comp_filtered.csv',encoding = "ISO-8859-1")
+localities = [data.groupby('Locality').get_group(x) for x in data.groupby('Locality').groups]
 
-    all_samples = []
+all_samples = []
 
-    mapper = pd.Series(data.Locality.values,index=data.Unit).to_dict()
-    mapper2 = pd.Series(data.Type.values,index=data.Unit).to_dict()
+mapper = pd.Series(data.Locality.values,index=data.Unit).to_dict()
+mapper2 = pd.Series(data.Type.values,index=data.Unit).to_dict()
 
-    ws = []
-    dic = {}
-    count = 0
-    for n,locality in enumerate(localities):
-        name = locality['Unit'].unique()
-        units = [locality.groupby('Unit').get_group(x) for x in locality.groupby('Unit').groups]
-        for unit in units:
-            all_samples.append(name)
-            # s, p = stats.skewtest(unit['age68'])
-            sample_name = unit['Unit'].iloc[0]
-            unit = unit.drop(['Unit'], axis = 1)
-            dic[sample_name] = unit
-            count = count + 1
+ws = []
+dic = {}
+count = 0
+for n,locality in enumerate(localities):
+    name = locality['Unit'].unique()
+    units = [locality.groupby('Unit').get_group(x) for x in locality.groupby('Unit').groups]
+    for unit in units:
+        all_samples.append(name)
+        sample_name = unit['Unit'].iloc[0]
+        unit = unit.drop(['Unit'], axis = 1)
+        dic[sample_name] = unit
+        count = count + 1
 
 
-    values = dic.values()
-    keys = list(dic.keys())
+values = dic.values()
+keys = list(dic.keys())
 
 
-    for df in values:
-        for i in np.arange(0,len(values)):
-            df2 = list(values)[i]
-            # Calculate Wasserstein metric
-            w2 = calc_w2(df['age68'],df2['age68'],x_err = df['2s_68'], y_err = df2['2s_68'], normalize = True)
-            ws.append(w2)
+for df in values:
+    for i in np.arange(0,len(values)):
+        df2 = list(values)[i]
+        # Calculate Wasserstein metric
+        w2 = calc_w2(df['age68'],df2['age68'],x_err = df['2s_68'], y_err = df2['2s_68'], normalize = True)
+        ws.append(w2)
 
 
-    ws = np.array(ws).reshape(len(values), len(values))
+ws = np.array(ws).reshape(len(values), len(values))
 
 
-    PCA_ws = PCA(n_components = 2)
+PCA_ws = PCA(n_components = 2)
 
-    names = [*map(mapper.get, keys)]
-    types = [*map(mapper2.get, keys)]
+names = [*map(mapper.get, keys)]
+types = [*map(mapper2.get, keys)]
 
-    types = pd.Series(types, name = 'Type')
-    names = pd.Series(names, name = 'Locality')
+types = pd.Series(types, name = 'Type')
+names = pd.Series(names, name = 'Locality')
 
-    PC_scores = pd.DataFrame(PCA_ws.fit_transform(ws), columns = ['PC1','PC2'])
-    PC_scores['Type'] = types
-    PC_scores['Locality'] = names
+PC_scores = pd.DataFrame(PCA_ws.fit_transform(ws), columns = ['PC1','PC2'])
 
-    pca_types = [PC_scores.groupby('Type').get_group(x) for x in PC_scores.groupby('Type').groups]
+def calc_W_PCA(ages, unc = None, check = True):
 
+    if unc is None:
+        unc = np.ones(len(ages))
+    if check == True:
+        check_data(ages, unc)
 
     w2_user = []
     for i in np.arange(0,len(values)):
@@ -278,10 +291,108 @@ def calc_W_PCA(ages, unc):
     pc_user = PCA_ws.transform(X = np.array(w2_user).reshape(1, -1)).flatten()
     return(pc_user)
 
+def bootstrap_sampling(age, n_zircon, n_simulations, distribution = 'MELTS', method = 'ID-TIMS', truncation = 1.0, n_inh = 0, dx = 1):
 
-laser = pd.read_csv('../data/laicpms_comp.csv')
-# Let's fit an exponential function.  
-# This looks like a line on a lof-log plot.
-def laser_func(x, a, b):
-    return a * np.power(x, b)
-laser_popt, laser_pcov = curve_fit(laser_func, laser['68age'], laser['68 2s'])
+    """
+    Bootstrap sampling of a zircon age distribution for a given age.
+
+    Args:
+        age (float): The age to sample at in Ma.
+        n_zircon (int): The number of zircons to sample from the age distribution.
+        n_simulations (int): The number of simulations of bootstap sampling to perform.
+        distribution (string or int): The underlying age distribution to sample from (default = MELTS):
+            - string options: MELTS, Triangular, Uniform, Volcanic Low Crystallinity, Volcanic, Half Normal, Reverse Triangular
+            - int options: an integer between 0 and 20 to sample from the Magma Chamber Simulator outputs of Tavazzani et al. (2023)
+        method (string): whether to sample for uncertainties relevant to ID-TIMS or LA-ICP-MS (default = ID-TIMS)
+        truncation (float): value between 0 and 1 for truncating the age distribution, (default = 1 i.e. no truncation)
+        n_inh (int): number of inherited/antecrystal zircons to add
+        dx (float or list): distance in relative time the antecrystal population is from the main distribution, if a list is given should be (min, max)
+        and a random value is drawn from this range
+
+    Returns:
+        np.array of an a
+    """
+    
+    synthetic_distributions = np.zeros((n_simulations, n_zircon+n_inh))
+    
+    if distribution == 'MELTS':
+        dist = pd.read_csv('../data/synthetic/MeltsTZircDistribution.tsv', header = None)[0]
+    if distribution == 'Triangular':
+        dist = pd.read_csv('../data/synthetic/TriangularDistribution.tsv', header = None)[0]
+    if distribution == 'Uniform':
+        dist = pd.read_csv('../data/synthetic/UniformDistribution.tsv', header = None)[0]
+    if distribution == 'Volcanic Low Crystallinity':
+        dist = pd.read_csv('../data/synthetic/VolcanicZirconLowXDistribution.tsv', header = None)[0]
+    if distribution == 'Volcanic':
+        dist = pd.read_csv('../data/synthetic/VolcanicZirconDistribution.tsv', header = None)[0]
+    if distribution == 'Half Normal':
+        dist = pd.read_csv('../data/synthetic/HalfNormalDistribution.tsv', header = None)[0]
+    if distribution == 'Reverse Triangular':
+        dist = pd.read_csv('../data/synthetic/ReverseTriangularDistribution.tsv', header = None)[0]
+    if isinstance(distribution, int):
+        mcs_distributions = pd.read_csv('../data/synthetic/Tavazzani2023MCS.csv', header = None)
+        dist = mcs_distributions[distribution][::-1]
+        dist = dist.dropna()
+
+    dist = dist.iloc[:int(np.rint(len(dist)*truncation))]
+    dist = dist.iloc[::-1]
+    probabilities = dist/np.sum(dist)
+    if method == 'ID-TIMS':
+        sigma = TIMS_uncer(age)/2 # 1 sigma at the given age
+    if method == 'LA-ICP-MS':
+        sigma = laser_uncer(age)/2 # 1 sigma at the given age
+    n = 0
+
+    while n < n_simulations:
+        synthetic = pd.Series(np.random.choice(np.linspace(start = 0, stop = 1.0, num = len(probabilities)), n_zircon, p=list(probabilities)))
+        sigmas = np.random.normal(0, sigma, size=(len(synthetic),)) # Randomly generate analytical uncertainties 
+        synthetic = synthetic + sigmas
+
+        if n_inh != 0:
+            if isinstance(dx, list):
+                dxn = np.random.uniform(dx[0],dx[1], 1)
+            else:
+                dxn = dx
+
+            
+            synthetic_2 = pd.Series(np.random.choice(np.linspace(start = 0, stop = 1.0, num = len(probabilities))+dxn, n_inh, p=list(probabilities)))
+            sigmas = np.random.normal(0, sigma, size=(len(synthetic_2),)) # Randomly generate analytical uncertainties 
+            synthetic_2 = synthetic_2 + sigmas
+            # New distribution 
+            synthetic = pd.concat([synthetic,synthetic_2])
+        
+        synthetic = np.sort(normalize_age(synthetic))
+        synthetic_distributions[n] = synthetic
+        n = n + 1
+
+    return synthetic_distributions
+
+
+def synthetic_distribution(distribution):
+    if distribution == 'MELTS':
+        dist = pd.read_csv('../data/synthetic/MeltsTZircDistribution.tsv', header = None)[0]
+    if distribution == 'Triangular':
+        dist = pd.read_csv('../data/synthetic/TriangularDistribution.tsv', header = None)[0]
+    if distribution == 'Uniform':
+        dist = pd.read_csv('../data/synthetic/UniformDistribution.tsv', header = None)[0]
+    if distribution == 'Volcanic Low Crystallinity':
+        dist = pd.read_csv('../data/synthetic/VolcanicZirconLowXDistribution.tsv', header = None)[0]
+    if distribution == 'Volcanic':
+        dist = pd.read_csv('../data/synthetic/VolcanicZirconDistribution.tsv', header = None)[0]
+    if distribution == 'Half Normal':
+        dist = pd.read_csv('../data/synthetic/HalfNormalDistribution.tsv', header = None)[0]
+    if distribution == 'Reverse Triangular':
+        dist = pd.read_csv('../data/synthetic/ReverseTriangularDistribution.tsv', header = None)[0]
+    if isinstance(distribution, int):
+        mcs_distributions = pd.read_csv('../data/synthetic/Tavazzani2023MCS.csv', header = None)
+        dist = mcs_distributions[distribution][::-1]
+        dist = dist.dropna()
+
+    dist = dist.iloc[::-1]
+    probabilities = dist/np.sum(dist)
+    synthetic = pd.Series(np.random.choice(np.linspace(start = 0, stop = 1.0, num = len(probabilities)), 10000, p=list(probabilities)))
+
+    x,y = plot_kde(synthetic, normalize = True)
+    
+    return(x,y)
+
