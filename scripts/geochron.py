@@ -206,6 +206,7 @@ def TIMS_uncer(age):
                       np.random.normal(TIMS_popt[2], pcov_sigma[2], 1)]
     
     output_2s = TIMS_popt_prop[0] * age **2  + TIMS_popt_prop[1] * age + TIMS_popt_prop[2]
+    output_2s = output_2s[output_2s > 0]
     
     return float(output_2s)
 
@@ -226,6 +227,7 @@ def laser_uncer(age):
                       np.random.normal(laser_popt[3], pcov_sigma[3], 1)]
 
     output_2s = laser_popt_prop[0] * age**3 + laser_popt_prop[1] * age**2 + laser_popt_prop[2] * age +laser_popt_prop[3] 
+    output_2s = output_2s[output_2s > 0]
 
     return(output_2s)
 
@@ -424,6 +426,23 @@ def bootstrap_sampling(age, n_zircon, n_simulations, distribution = 'MELTS', met
 
     return synthetic_distributions
 
+def bootstrap_sampling_misfit(age, n_zircon, n_simulations, distribution = 'MELTS', method = 'ID-TIMS', truncation = 1.0, n_inh = 0, dx = 1):
+    bootstrap = bootstrap_sampling(age, n_zircon, n_simulations, distribution = distribution, method = method, truncation = truncation, n_inh = n_inh, dx = dx)
+
+    # Calculate age distribution in a relatively ideal situation (lots of zircon, low uncertainty)
+    ideal = bootstrap_sampling(age = 0.1, n_zircon = 1000, n_simulations = 1, distribution = distribution, method = 'ID-TIMS', truncation = truncation, n_inh = n_inh, dx = dx)
+    # calculate misfit from ideal
+    misfits = []
+    for simulation,i in enumerate(bootstrap):
+        misfit = calc_w2(i,ideal,x_err = None, y_err = None, normalize = True, p = 2)
+        misfits.append(misfit)
+
+    # Calculate metrics
+    mean_misfit = np.mean(misfits)
+    std_misfit = np.std(misfits)
+    
+    return mean_misfit, std_misfit
+        
 
 def synthetic_distribution(distribution):
     if distribution == 'MELTS':
