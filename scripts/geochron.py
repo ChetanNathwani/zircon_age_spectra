@@ -6,20 +6,48 @@ from scipy.optimize import curve_fit
 from sklearn.decomposition import PCA
 import warnings
 
-def normalize_age(group):
+def normalize_age(ages):
     """
-    
+    Normalise zircon absolute ages to t_rel
+
+    Args:
+        ages (np.array): zircon ages in Ma
+
+    Returns:
+        np.array of zircon ages normalised between t_max and t_min
     """
-    min_age = group.min()
-    max_age = group.max()
-    return (group - min_age) / (max_age - min_age)
+    min_age = ages.min()
+    max_age = ages.max()
+    return (ages - min_age) / (max_age - min_age)
 
 def calc_delT(data):
-    # Insert a numpy array of dates and return the age normalised to the min and max
+
+    """
+    Calculate deltaT (max versus minimum zircon age)
+
+    Args:
+        ages (np.array): list of zircon ages in Ma
+
+    Returns:
+        np.array of zircon ages normalised between t_max and t_min
+    """
+
     deltaT = (data-np.min(data))/(np.max(data)-np.min(data))
     return(deltaT)
 
 def check_data(ages, unc):
+
+    """
+    Check zircon U-Pb age distributions for potential issues such as low delta_t/avg_sgima, high absolute age, low number of zircons, variable uncertainties
+
+    Args:
+        ages (np.array): list of zircon ages in Ma
+        unc (np.array): list of zircon 2 sigma uncertainties in Ma 
+
+    Returns:
+        warnings where raised
+    """
+    
     if len(ages) < 10:
         warnings.warn("Distributions with low number of dates may not provide useful results")
     delta_T = np.max(ages) - np.min(ages)
@@ -33,6 +61,21 @@ def check_data(ages, unc):
         warnings.warn("Relative uncertainties show large variation, shape of age distribution may be dominated by variation in analytical uncertainty")
 
 def plot_kde(ages, uncertainty=None, normalize = False):
+
+    """
+    Calculate x, y co-ordinates to plot kernel density plot from zircon age distribution
+
+    Args:
+        ages (np.array): list of zircon ages in Ma
+        uncertainty (np.array): list of zircon 2 sigma uncertainties in Ma , default = None
+        normalize (bool): whether to normalise the data between 0 and 1, default = False
+    
+    Returns:
+        x (np.array): x-coordinates of kernel density plot
+        y (np.array): y-coordinates of kernel density plot
+    """
+    
+    
     if normalize is True:
         ages = (ages - np.min(ages)) / (np.max(ages) - np.min(ages))
     if uncertainty is None:
@@ -47,6 +90,18 @@ def plot_kde(ages, uncertainty=None, normalize = False):
     return(eval_points, y_sp)
 
 def ecdf(ages, uncertainties=None):
+
+    """
+    Calculate x, y co-ordinates to plot empirical cumulative distribution frequency curve from zircon age distribution
+
+    Args:
+        ages (np.array): list of zircon ages in Ma
+        uncertainty (np.array): list of zircon 2 sigma uncertainties in Ma , default = None
+    
+    Returns:
+        x (np.array): x-coordinates of ecdf
+        y (np.array): y-coordinates of ecdf
+    """
     
     # Normalize the data between 0 and 1
     data_min = min(ages)
@@ -134,7 +189,7 @@ def filter_older_ages(age_dist, unc=None, weighted = False, gradient_cut_off = 0
 # Import data for TIMS age vs unc parameterisation
 
 def TIMS_func(x, a, b, c):
-    output_2s = a * np.power(x, b) + c
+    output_2s = a*x**2 + b*x + c
     return output_2s
 
 tims_compilation = pd.read_csv('../data/zircon_tims_comp.csv',encoding = "ISO-8859-1")
@@ -150,12 +205,12 @@ def TIMS_uncer(age):
                       np.random.normal(TIMS_popt[1], pcov_sigma[1], 1),
                       np.random.normal(TIMS_popt[2], pcov_sigma[2], 1)]
     
-    output_2s = TIMS_popt_prop[0] * np.power(age, TIMS_popt_prop[1]) + TIMS_popt_prop[2]
+    output_2s = TIMS_popt_prop[0] * age **2  + TIMS_popt_prop[1] * age + TIMS_popt_prop[2]
     
     return float(output_2s)
 
-def laser_func(x, a, b):
-    return a * np.power(x, b)
+def laser_func(x, a, b, c, d):
+    return a*x**3 + b*x**2 + c*x + d
 
 laser_compilation = pd.read_csv('../data/laicpms_comp.csv')
 laser_popt, laser_pcov = curve_fit(laser_func, laser_compilation['68age'], laser_compilation['68 2s'])
@@ -166,9 +221,11 @@ def laser_uncer(age):
 
     # Update parameters with gaussian uncertainty
     laser_popt_prop = [np.random.normal(laser_popt[0], pcov_sigma[0], 1),
-                      np.random.normal(laser_popt[1], pcov_sigma[1], 1)]
+                       np.random.normal(laser_popt[1], pcov_sigma[1], 1),
+                       np.random.normal(laser_popt[2], pcov_sigma[2], 1),
+                      np.random.normal(laser_popt[3], pcov_sigma[3], 1)]
 
-    output_2s = laser_popt_prop[0] * np.power(age, laser_popt_prop[1])
+    output_2s = laser_popt_prop[0] * age**3 + laser_popt_prop[1] * age**2 + laser_popt_prop[2] * age +laser_popt_prop[3] 
 
     return(output_2s)
 
@@ -301,7 +358,7 @@ def bootstrap_sampling(age, n_zircon, n_simulations, distribution = 'MELTS', met
         n_zircon (int): The number of zircons to sample from the age distribution.
         n_simulations (int): The number of simulations of bootstap sampling to perform.
         distribution (string or int): The underlying age distribution to sample from (default = MELTS):
-            - string options: MELTS, Triangular, Uniform, Volcanic Low Crystallinity, Volcanic, Half Normal, Reverse Triangular
+            - string options (distributions of Keller C. B. (2018) chron.Jl library): MELTS, Triangular, Uniform, Volcanic Low Crystallinity, Volcanic, Half Normal,   Reverse Triangular
             - int options: an integer between 0 and 20 to sample from the Magma Chamber Simulator outputs of Tavazzani et al. (2023)
         method (string): whether to sample for uncertainties relevant to ID-TIMS or LA-ICP-MS (default = ID-TIMS)
         truncation (float): value between 0 and 1 for truncating the age distribution, (default = 1 i.e. no truncation)
